@@ -16,9 +16,12 @@ export class DeadlineService {
     private _secondsLeft = signal<number | null>(null);
     public secondsLeft = computed(() => this._secondsLeft());
 
-    constructor() {
-        this.fetchFromApi().pipe(takeUntilDestroyed()).subscribe();
-    }
+    private initialSecondsLeft: number | null = null;
+    private lastFetchTime: number = 0;
+
+    // constructor() {
+    //     this.fetchFromApi().pipe(takeUntilDestroyed()).subscribe();
+    // }
 
     fetchFromApi() {
         return this.http.get<DeadlineResponse>(this.API_URL).pipe(
@@ -30,9 +33,13 @@ export class DeadlineService {
     }
 
     startCountdown(): void {
-        this.stopCountdown();
+        if (this.intervalId !== null) {
+            return;
+        }
 
         this.fetchFromApi().subscribe(response => {
+            this.initialSecondsLeft = response.secondsLeft;
+            this.lastFetchTime = Date.now();
             this._secondsLeft.set(response.secondsLeft);
 
             this.intervalId = window.setInterval(() => {
@@ -57,5 +64,17 @@ export class DeadlineService {
         this.fetchFromApi().subscribe(response => {
             this._secondsLeft.set(response.secondsLeft);
         });
+    }
+
+    recalculateCountdown(): void {
+        if (this.initialSecondsLeft === null) {
+            return;
+        }
+
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - this.lastFetchTime) / 1000);
+
+        const newSecondsLeft = Math.max(0, this.initialSecondsLeft - elapsedSeconds);
+        this._secondsLeft.set(newSecondsLeft);
     }
 }

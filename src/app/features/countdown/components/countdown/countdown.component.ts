@@ -27,7 +27,7 @@ export class CountdownComponent implements OnInit, OnDestroy {
 
   private handleVisibilityChange(): void {
     if (document.visibilityState === 'visible') {
-      this.deadlineService.refreshCountdown();
+      this.deadlineService.recalculateCountdown();
     }
   }
 
